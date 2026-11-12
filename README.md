@@ -13,7 +13,7 @@ git clone https://github.com/anne118193/PoGo_PokeDex.git
 
 or you can just download the files 
 
-### 3. Environment Setup
+### 2. Environment Setup
 
 I usually just read the errors and fix them one at a time ... 
 
@@ -34,11 +34,11 @@ brew install imagemagick
 ```
 
 
-### 2. How to Run
+### 3. How to Run
 
 #### Screen Record Pokedex
 There are privacy and security things that you need to allow so that this will work.
-
+\\
 Allow Terminal to control the mouse: go to System Settings → Privacy & Security → Accessibility and turn on Terminal
 
 make the file executable and then run the file
@@ -49,10 +49,10 @@ chmod +x autoscroll.sh
 
 #### Process Screen Recording (Video)
 There are privacy and security things that you need to allow so that this will work.
-
+\\
 Allow terminal to take screenshots of different parts of different frames in the video (terminal needs screen recording access): go to System Settings → Privacy & Security → Screen & System Audio Recording.
 
-**file name = region name**
+**file name = region name** \\
 The region name comes from the file name, so the name each recording after its region
 
 for 1 video 
@@ -68,7 +68,7 @@ for multiple videos
 ``` bash
 python3 process_pokedex.py ~/Desktop/Kanto.mov ~/Desktop/Johto.mov ~/Desktop/Hoenn.mov
 ```
-**custom region name**
+**custom region name** \\
 To keep the original file names, put the region name in front with =. Use quotes when the name has spaces.
 
 ```bash

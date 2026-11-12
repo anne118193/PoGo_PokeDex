@@ -40,7 +40,7 @@ brew install imagemagick
 
 #### Screen Record Pokedex
 There are privacy and security things that you need to allow so that this will work.
-\\
+<br>
 Allow Terminal to control the mouse: go to System Settings → Privacy & Security → Accessibility and turn on Terminal
 
 
@@ -49,29 +49,29 @@ make the file executable (only need to do this once)
 chmod +x autoscroll.sh
 ```
 
-mirror your iPhone to your MacBook with the iPhone mirroring app \\
-start screen recording (drag box so that it only covers the iPhone screen)\\
-  cmd + shift + 5 \\
+mirror your iPhone to your MacBook with the iPhone mirroring app <br>
+start screen recording (drag box so that it only covers the iPhone screen)<br>
+  cmd + shift + 5 <br>
 
 run the file
 ```bash
 ./autoscroll.sh
 ```
-move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) \\
+move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) <br>
 
-to stop the script, forcibly move your mouse and click into the terminal \\
-  ctrl + c
+to stop the script, forcibly move your mouse and click into the terminal <br>
+  ctrl + c <br>
 
 I really do need to make a better way to stop the script but I'm lazy so for now this is how it is
 
 #### Process Screen Recording (Video)
 you may want to crop the videos a bit manually before you start this process but it is up to you
-\\
+<br>
 There are privacy and security things that you need to allow so that this will work.
-\\
+<br>
 Allow terminal to take screenshots of different parts of different frames in the video (terminal needs screen recording access): go to System Settings → Privacy & Security → Screen & System Audio Recording.
 
-**file name = region name** \\
+**file name = region name** <br>
 The region name comes from the file name, so the name each recording after its region
 
 for 1 video 
@@ -87,7 +87,7 @@ for multiple videos
 ``` bash
 python3 process_pokedex.py ~/Desktop/Kanto.mov ~/Desktop/Johto.mov ~/Desktop/Hoenn.mov
 ```
-**custom region name** \\
+**custom region name** <br>
 To keep the original file names, put the region name in front with =. Use quotes when the name has spaces.
 
 ```bash

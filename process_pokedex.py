@@ -1,5 +1,7 @@
 """Turn an iPhone Mirroring screen recording of the Pokémon GO Pokédex into a swipeable web viewer.
-Usage:  python3 process_pokedex.py recording.mov [output_folder]
+Usage:  python3 process_pokedex.py kanto.mov johto.mov ... [-o output_folder]
+        The region name comes from the file name; use  Name=file.mov  to set it yourself
+        (e.g. "Kanto=Screen Recording 1.mov"). Several videos with the same region name are joined in order.
 Needs:  pip3 install opencv-python numpy
 """
 import cv2, numpy as np, sys, os, json
@@ -83,8 +85,9 @@ def calibrate(pages, fallback=None):
 def tile_rows(img, w, h, cols, T=6):
     """Rows of tiles as (top, count). Tiles are lighter than the background next to the screen edge."""
     g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
-    ref = np.median(g[:, cols[0] - 20:cols[0] - 8], axis=1)
-    strip = lambda x: np.median(g[:, x + w - 15:x + w - 5], axis=1) - ref
+    W = g.shape[1]   # slices are kept inside the image so a column near the edge can't come out empty
+    ref = np.median(g[:, max(0, cols[0] - 20):max(2, cols[0] - 8)], axis=1)
+    strip = lambda x: np.median(g[:, min(x + w - 15, W - 3):min(x + w - 5, W)], axis=1) - ref
     on, out, y = strip(cols[0]) > T, [], 0
     while y < len(on):
         if not on[y]: y += 1; continue
@@ -96,17 +99,18 @@ def tile_rows(img, w, h, cols, T=6):
         y = e
     return out
 
-def main(video, out):
-    os.makedirs(f'{out}/img', exist_ok=True)
-    pages = stitch(rest_frames(video)); print(f'Found {len(pages)} Pokémon')
-    glob = calibrate(pages)
-    if glob is None: sys.exit('Could not find any Caught boxes in the recording. Make sure the Caught tab is open.')
+def process(video, out, tag):
+    """All Pokémon in one video, each as {'head', 'blocks', 'pad', 'gap'}."""
+    pages = stitch(rest_frames(video)); print(f'{video}: found {len(pages)} Pokémon')
+    glob = calibrate(pages)   # measured per video, since recordings can differ in size
+    if glob is None: print('  No Caught boxes found in this video (is the Caught tab open?), skipping.'); return []
+    save = lambda name, im: (cv2.imwrite(f'{out}/img/{tag}{name}.jpg', im, [cv2.IMWRITE_JPEG_QUALITY, 88]), f'img/{tag}{name}.jpg')[1]
     data = []
     for i, p in enumerate(pages):
-        save = lambda name, im: (cv2.imwrite(f'{out}/img/{name}.jpg', im, [cv2.IMWRITE_JPEG_QUALITY, 88]), f'img/{name}.jpg')[1]
-        w, h, cols = calibrate([p], glob)   # measured per page if possible, else shared
-        rows = tile_rows(p, w, h, cols)
-        if not rows: data.append({'head': save(f'p{i}_full', p), 'blocks': []}); continue
+        w, h, cols = calibrate([p], glob)   # measured per page if possible, else per video
+        rows, W = tile_rows(p, w, h, cols), p.shape[1]
+        d = {'pad': cols[0] / W, 'gap': (cols[1] - cols[0] - w) / W}   # grid spacing as a fraction of screen width
+        if not rows: print(f'  Pokémon {i + 1}: no boxes found, showing the whole page instead'); data.append({**d, 'head': save(f'p{i}_full', p), 'blocks': []}); continue
         gap = min([b[0] - a[0] - h for a, b in zip(rows, rows[1:])] or [10])
         blocks, tiles = [], []
         for r, (y, n) in enumerate(rows):
@@ -114,12 +118,21 @@ def main(video, out):
                 blocks += [{'tiles': tiles}, {'strip': save(f'p{i}_s{r}', p[rows[r - 1][0] + h:y])}]; tiles = []
             tiles += [save(f'p{i}_t{r}_{k}', p[y:y + h, x:x + w]) for k, x in enumerate(cols[:n])]
         blocks.append({'tiles': tiles})
-        data.append({'head': save(f'p{i}_head', p[:max(0, rows[0][0] - gap)]), 'blocks': blocks})
+        data.append({**d, 'head': save(f'p{i}_head', p[:max(0, rows[0][0] - gap)]), 'blocks': blocks})
+    return data
+
+def main(args):
+    out = args[args.index('-o') + 1] if '-o' in args else 'pokedex_viewer'
+    videos = [a for i, a in enumerate(args) if a != '-o' and (i == 0 or args[i - 1] != '-o')]
+    if not videos: sys.exit(__doc__)
+    os.makedirs(f'{out}/img', exist_ok=True); regions = {}
+    for v, arg in enumerate(videos):
+        name, path = arg.split('=', 1) if '=' in arg and not os.path.exists(arg) else (os.path.splitext(os.path.basename(arg))[0], arg)
+        regions.setdefault(name, []).extend(process(path, out, f'v{v}_'))
+    regions = [{'name': n, 'pages': p} for n, p in regions.items() if p]
     page = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'viewer.html')).read()
-    w, h, cols = glob; W = pages[0].shape[1]  # tile spacing as a fraction of screen width, so the grid matches the app
-    meta = {'pad': cols[0] / W, 'gap': (cols[1] - cols[0] - w) / W, 'pages': data}
-    open(f'{out}/index.html', 'w').write(page.replace('/*DATA*/[]', json.dumps(meta)))
+    open(f'{out}/index.html', 'w').write(page.replace('/*DATA*/[]', json.dumps(regions)))
     print(f'Open {out}/index.html in your browser')
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else 'pokedex_viewer')
+    main(sys.argv[1:])

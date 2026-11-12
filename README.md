@@ -5,7 +5,7 @@ Utilizes Mac's "Iphone Mirroring" App which allows you to use your iPhone with y
 Obviously claude wrote a bunch of this code. 
 
 ## Version 1
-works, kinda clunky, not aesthetically pleasing, but it works and it does what I need it to do (and honestly I could just stop here because I have solved my problem)
+works, kinda clunky, not aesthetically pleasing, but it works and it does what I need it to do (and honestly I could just stop here because I have solved my problem) <br>
 
 ### 1. Clone the Repository
 
@@ -99,8 +99,13 @@ python3 process_pokedex.py "Kanto=<path>/Screen Recording 1.mov" "Johto=<path>Sc
 
 you should be able to open up index.html in the poxedex_viewer folder and use your pokedex :)
 
-### 4. File Descriptions
+### 4. File + Folder Descriptions
+- pokedex_viewer: folder where images are saved + where the populated pokedex html is saved
+- pokedex_viewer/index.html: populated pokedex
 - autoscroll.sh: shell script for automatically scrolling through pokedex
+- process_pokedex.py: python script for processing a video of someone scrolling through the PoGo pokedex, saves every entry as seperate images that can be used to populate index.html
+- rebuild_viewer.py: rebuild the html for viewing pokedex without reprocessing a video
+- viewer.html: empty html template for pokedex
 
 ## Version 2
 Is there a more efficient way to do this that doesn't involve parsing long videos?

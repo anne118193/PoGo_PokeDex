@@ -51,7 +51,7 @@ chmod +x autoscroll.sh
 
 mirror your iPhone to your MacBook with the iPhone mirroring app <br>
 start screen recording (drag box so that it only covers the iPhone screen)<br>
-  cmd + shift + 5 <br>
+&emsp; cmd + shift + 5 <br>
 
 run the file
 ```bash
@@ -60,7 +60,7 @@ run the file
 move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) <br>
 
 to stop the script, forcibly move your mouse and click into the terminal <br>
-  ctrl + c <br>
+&emsp; ctrl + c <br>
 
 I really do need to make a better way to stop the script but I'm lazy so for now this is how it is
 
@@ -100,4 +100,7 @@ you should be able to open up index.html in the poxedex_viewer folder and use yo
 
 ## Version 2
 Is there a more efficient way to do this that doesn't involve parsing long videos?
+
+
+haven't stated v2 ... 
 

@@ -130,8 +130,9 @@ def main(args):
         name, path = arg.split('=', 1) if '=' in arg and not os.path.exists(arg) else (os.path.splitext(os.path.basename(arg))[0], arg)
         regions.setdefault(name, []).extend(process(path, out, f'v{v}_'))
     regions = [{'name': n, 'pages': p} for n, p in regions.items() if p]
-    page = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'viewer.html')).read()
-    open(f'{out}/index.html', 'w').write(page.replace('/*DATA*/[]', json.dumps(regions)))
+    json.dump(regions, open(f'{out}/data.json', 'w'))   # lets rebuild_viewer.py redo the page without the videos
+    page = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'viewer.html'), encoding='utf-8').read()
+    open(f'{out}/index.html', 'w', encoding='utf-8').write(page.replace('/*DATA*/[]', json.dumps(regions)))
     print(f'Open {out}/index.html in your browser')
 
 if __name__ == '__main__':

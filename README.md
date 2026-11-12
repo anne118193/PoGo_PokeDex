@@ -56,11 +56,11 @@ mirror your iPhone to your MacBook with the iPhone mirroring app <br>
 4. start screen recording (drag box so that it only covers the iPhone screen)<br>
 &emsp;&emsp; cmd + shift + 5 <br>
 
-run the file
+5. run the file
 ```bash
 ./autoscroll.sh
 ```
-move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) <br>
+6. move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) <br>
 
 to stop the script, forcibly move your mouse and click into the terminal <br>
 &emsp; ctrl + c <br>

@@ -50,8 +50,11 @@ chmod +x autoscroll.sh
 ```
 
 mirror your iPhone to your MacBook with the iPhone mirroring app <br>
-start screen recording (drag box so that it only covers the iPhone screen)<br>
-&emsp; cmd + shift + 5 <br>
+1. open PokemonGo
+2. go to PokeDex
+3. click on the 1st pokemon you want to start recording from (only 1 pokemon should be shown on the screen)
+4. start screen recording (drag box so that it only covers the iPhone screen)<br>
+&emsp;&emsp; cmd + shift + 5 <br>
 
 run the file
 ```bash
@@ -97,6 +100,7 @@ python3 process_pokedex.py "Kanto=<path>/Screen Recording 1.mov" "Johto=<path>Sc
 you should be able to open up index.html in the poxedex_viewer folder and use your pokedex :)
 
 ### 4. File Descriptions
+- autoscroll.sh: shell script for automatically scrolling through pokedex
 
 ## Version 2
 Is there a more efficient way to do this that doesn't involve parsing long videos?

@@ -21,7 +21,7 @@ drag() {
 for ((i=1; i<=N; i++)); do
   echo "Pokémon $i"
   #while drag 0 $D fast ; do :; done   # your order: flick down first
-  while drag 0 -$D fast; do :; done   # then flick up
-  drag -260 0 fast                    # swipe left to the next Pokémon (always, no end check)
+  while drag 0 -$D; do :; done   # then flick up
+  drag -260 0 fast                       # swipe left to the next Pokémon (always, no end check)
 done
 echo "Done."

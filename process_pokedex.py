@@ -14,28 +14,37 @@ def phone_box(frames):  # largest teal region = the iPhone screen
     return x, y, w, h
 
 def rest_frames(path, step_fps=10):
-    """Frames where the screen has stopped moving (the script pauses after every swipe)."""
-    cap = cv2.VideoCapture(path); fps = cap.get(cv2.CAP_PROP_FPS) or 30; step = max(1, round(fps / step_fps))
-    frames, i = [], 0
-    while True:
-        ok, f = cap.read()
-        if not ok: break
-        if i % step == 0: frames.append(f)
+    """Yields (frame, swiped) for each moment the screen stops moving; swiped = a left/right swipe happened just before.
+    Reads the video one frame at a time so long recordings don't run out of memory."""
+    cap = cv2.VideoCapture(path); total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30; step = max(1, round(fps / step_fps))
+    sample = []
+    for t in np.linspace(0, max(total - 1, 0), 30).astype(int):   # a few frames spread over the video, to find the phone
+        cap.set(cv2.CAP_PROP_POS_FRAMES, t); ok, f = cap.read()
+        if ok: sample.append(f)
+    if not sample: sys.exit(f'Could not read any video from "{path}". Check the file name, or convert it with: ffmpeg -i "{path}" -c:v libx264 fixed.mp4')
+    x, y, w, h = phone_box(sample); del sample
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    prev, win, count, pick, swiped, i = None, None, 0, None, False, -1
+    while cap.grab():
         i += 1
-    if not frames: sys.exit(f'Could not read any video from "{path}". Check the file name, or convert it with: ffmpeg -i "{path}" -c:v libx264 fixed.mp4')
-    x, y, w, h = phone_box(frames[::max(1, len(frames) // 30)])
-    band = [f[y + int(h * .06):y + int(h * .90), x + int(w * .02):x + w - int(w * .02)] for f in frames]  # skip status bar and bottom bar
-    small = [cv2.cvtColor(cv2.resize(b, None, fx=.25, fy=.25), cv2.COLOR_BGR2GRAY).astype(np.float32) for b in band]
-    win = cv2.createHanningWindow(small[0].shape[::-1], cv2.CV_32F)
-    rests, run, swiped = [], [], False   # each rest: (frame, was there a left/right swipe since the last rest?)
-    for k in range(1, len(small) + 1):
-        if k < len(small) and (abs(small[k] - small[k - 1]) > 20).mean() < .05: run.append(band[k]); continue
-        if len(run) >= 3: rests.append((run[len(run) // 2], swiped)); swiped = False
-        run = []
-        if k < len(small):
-            (dx, dy), _ = cv2.phaseCorrelate(small[k - 1], small[k], win)
-            swiped |= abs(dx) > small[k].shape[1] * .04 and abs(dx) > 2 * abs(dy)
-    return rests
+        if i % step: continue
+        ok, f = cap.retrieve()
+        if not ok: break
+        band = f[y + int(h * .06):y + int(h * .90), x + int(w * .02):x + w - int(w * .02)].copy()  # skip status bar and bottom bar
+        small = cv2.cvtColor(cv2.resize(band, None, fx=.25, fy=.25), cv2.COLOR_BGR2GRAY).astype(np.float32)
+        if prev is not None and (abs(small - prev) > 20).mean() < .05:   # still
+            count += 1
+            if count <= 5: pick = band   # a frame about half a second into the pause
+        else:
+            if count >= 3: yield pick, swiped; swiped = False
+            count, pick = 0, None
+            if prev is not None:
+                if win is None: win = cv2.createHanningWindow(small.shape[::-1], cv2.CV_32F)
+                (dx, dy), _ = cv2.phaseCorrelate(prev, small, win)
+                swiped |= abs(dx) > small.shape[1] * .04 and abs(dx) > 2 * abs(dy)
+        prev = small
+    if count >= 3: yield pick, swiped
 
 def offset(a, b):
     """How far the content moved up from frame a to frame b, or None if the frames don't overlap."""
@@ -46,18 +55,21 @@ def offset(a, b):
     return ty - by if score > .85 else None
 
 def stitch(rests):
-    """One tall image per Pokémon. A new Pokémon starts after every left/right swipe."""
-    pages, canvas, pos = [], None, 0
-    for (prev, _), (cur, swiped) in zip([(None, 0)] + rests, rests):
+    """Yields one tall image per Pokémon. A new Pokémon starts after every left/right swipe."""
+    canvas, pos, prev = None, 0, None
+    for cur, swiped in rests:
         if prev is None or swiped:
-            if canvas is not None: pages.append(canvas)
-            canvas, pos = cur.copy(), 0; continue
-        d = offset(prev, cur)
-        if d is None:   # scrolled too far to line up the frames: add the whole frame below
-            canvas = np.vstack([canvas, cur]); pos = canvas.shape[0] - cur.shape[0]; continue
-        pos += d; extra = pos + cur.shape[0] - canvas.shape[0]
-        if extra > 0: canvas = np.vstack([canvas, cur[-extra:]])
-    return pages + [canvas] if canvas is not None else pages
+            if canvas is not None: yield canvas
+            canvas, pos = cur.copy(), 0
+        else:
+            d = offset(prev, cur)
+            if d is None:   # scrolled too far to line up the frames: add the whole frame below
+                canvas = np.vstack([canvas, cur]); pos = canvas.shape[0] - cur.shape[0]
+            else:
+                pos += d; extra = pos + cur.shape[0] - canvas.shape[0]
+                if extra > 0: canvas = np.vstack([canvas, cur[-extra:]])
+        prev = cur
+    if canvas is not None: yield canvas
 
 def edge_tiles(img):  # finds clean, fully visible tiles; used only to measure the grid
     g = cv2.GaussianBlur(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), (5, 5), 0)
@@ -100,14 +112,13 @@ def tile_rows(img, w, h, cols, T=6):
     return out
 
 def process(video, out, tag):
-    """All Pokémon in one video, each as {'head', 'blocks', 'pad', 'gap'}."""
-    pages = stitch(rest_frames(video)); print(f'{video}: found {len(pages)} Pokémon')
-    glob = calibrate(pages)   # measured per video, since recordings can differ in size
-    if glob is None: print('  No Caught boxes found in this video (is the Caught tab open?), skipping.'); return []
+    """All Pokémon in one video, each as {'head', 'blocks', 'pad', 'gap'}. Pages are handled one at a time."""
     save = lambda name, im: (cv2.imwrite(f'{out}/img/{tag}{name}.jpg', im, [cv2.IMWRITE_JPEG_QUALITY, 88]), f'img/{tag}{name}.jpg')[1]
-    data = []
-    for i, p in enumerate(pages):
-        w, h, cols = calibrate([p], glob)   # measured per page if possible, else per video
+    data, glob = [], None
+    for i, p in enumerate(stitch(rest_frames(video))):
+        glob = calibrate([p], glob)   # measured on this page if possible, else the last good measurement
+        if glob is None: print(f'  Pokémon {i + 1}: no boxes found, showing the whole page instead'); data.append({'pad': .05, 'gap': .012, 'head': save(f'p{i}_full', p), 'blocks': []}); continue
+        w, h, cols = glob
         rows, W = tile_rows(p, w, h, cols), p.shape[1]
         d = {'pad': cols[0] / W, 'gap': (cols[1] - cols[0] - w) / W}   # grid spacing as a fraction of screen width
         if not rows: print(f'  Pokémon {i + 1}: no boxes found, showing the whole page instead'); data.append({**d, 'head': save(f'p{i}_full', p), 'blocks': []}); continue
@@ -119,6 +130,7 @@ def process(video, out, tag):
             tiles += [save(f'p{i}_t{r}_{k}', p[y:y + h, x:x + w]) for k, x in enumerate(cols[:n])]
         blocks.append({'tiles': tiles})
         data.append({**d, 'head': save(f'p{i}_head', p[:max(0, rows[0][0] - gap)]), 'blocks': blocks})
+    print(f'{video}: found {len(data)} Pokémon')
     return data
 
 def main(args):

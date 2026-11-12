@@ -1,5 +1,7 @@
 I just want to be able to look at my Pokedex on my laptop while I evolve various Pokemon to fill out the rest of my Pokedex. (bec how am I supposed to know which XXL Pokemon I have) PoGo doesn't have an API for this so I need to scrape all of my own data somehow. 
 
+Utilizes Mac's "Iphone Mirroring" App which allows you to use your iPhone with your Mac
+
 Obviously claude wrote a bunch of this code. 
 
 ## Version 1
@@ -41,13 +43,30 @@ There are privacy and security things that you need to allow so that this will w
 \\
 Allow Terminal to control the mouse: go to System Settings → Privacy & Security → Accessibility and turn on Terminal
 
-make the file executable and then run the file
+
+make the file executable (only need to do this once)
 ```bash
 chmod +x autoscroll.sh
-./autoscroll.sh
 ```
 
+mirror your iPhone to your MacBook with the iPhone mirroring app \\
+start screen recording (drag box so that it only covers the iPhone screen)\\
+  cmd + shift + 5 \\
+
+run the file
+```bash
+./autoscroll.sh
+```
+move mouse to the center of your mirrored iPhone, you have 5 sec to do this (putting it over the word "info" works well enough for me) \\
+
+to stop the script, forcibly move your mouse and click into the terminal \\
+  ctrl + c
+
+I really do need to make a better way to stop the script but I'm lazy so for now this is how it is
+
 #### Process Screen Recording (Video)
+you may want to crop the videos a bit manually before you start this process but it is up to you
+\\
 There are privacy and security things that you need to allow so that this will work.
 \\
 Allow terminal to take screenshots of different parts of different frames in the video (terminal needs screen recording access): go to System Settings → Privacy & Security → Screen & System Audio Recording.
@@ -74,6 +93,10 @@ To keep the original file names, put the region name in front with =. Use quotes
 ```bash
 python3 process_pokedex.py "Kanto=<path>/Screen Recording 1.mov" "Johto=<path>Screen Recording 2.mov"
 ```
+
+you should be able to open up index.html in the poxedex_viewer folder and use your pokedex :)
+
+### 4. File Descriptions
 
 ## Version 2
 Is there a more efficient way to do this that doesn't involve parsing long videos?
